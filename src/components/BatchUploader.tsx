@@ -82,7 +82,7 @@ export default function BatchUploader({ clientId, clientName, month, year, onClo
           platform: commonPlatform,
           platform_cost: commonPlatformCost ? parseFloat(commonPlatformCost) : 0,
         })
-      } catch (err) { console.error(`Error uploading ${f.name}:`, err) }
+      } catch (err: any) { alert(`Error subiendo ${f.name}: ${err?.message || 'Desconocido'}`) }
       setProgress({ current: i + 1, total: files.length })
     }
     onClose()

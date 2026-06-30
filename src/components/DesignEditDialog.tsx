@@ -30,6 +30,8 @@ export default function DesignEditDialog({ design, onSave, onClose }: Props) {
   const [showManage, setShowManage] = useState<'categories' | 'platforms' | null>(null)
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+  const [newImagePath, setNewImagePath] = useState<string | null>(null)
+  const [replacing, setReplacing] = useState(false)
 
   useEffect(() => { loadCategories().then(setCategories) }, [])
   useEffect(() => { loadPlatforms().then(setPlatforms) }, [])
@@ -67,11 +69,21 @@ export default function DesignEditDialog({ design, onSave, onClose }: Props) {
     setShowPromptPlatform(false)
   }
 
+  const handleSelectImage = async () => {
+    const filePath = await window.electronAPI.selectImage()
+    if (filePath) setNewImagePath(filePath)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
     setSaving(true)
     try {
+      if (newImagePath) {
+        setReplacing(true)
+        await window.electronAPI.replaceDesignImage(design.id, newImagePath)
+        setReplacing(false)
+      }
       await onSave(design.id, { title: title.trim(), description: description.trim(), category, notes: notes.trim(), price: price ? parseFloat(price) : 0, platform, platform_cost: platformCost ? parseFloat(platformCost) : 0, design_date: date })
       onClose()
     } finally { setSaving(false) }
@@ -85,13 +97,20 @@ export default function DesignEditDialog({ design, onSave, onClose }: Props) {
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="flex gap-4">
-            <div className="w-20 h-20 rounded-lg overflow-hidden bg-surface-100 dark:bg-surface-800 shrink-0">
-              <img src={window.electronAPI.getImageUrl(design.thumbnail_path || design.file_path)} alt="" className="w-full h-full object-contain bg-surface-100" />
+            <div className="w-20 h-20 rounded-lg overflow-hidden bg-surface-100 dark:bg-surface-800 shrink-0 relative">
+              <img src={window.electronAPI.getImageUrl(newImagePath || design.thumbnail_path || design.file_path)} alt="" className="w-full h-full object-contain bg-surface-100" />
+              {replacing && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /></div>}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{design.file_name}</p>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-                className="text-xs text-surface-400 bg-transparent border border-surface-200 dark:border-surface-700 rounded px-2 py-0.5 mt-1 cursor-pointer hover:border-indigo-400 transition-colors" />
+              <div className="flex gap-2 mt-1">
+                <button type="button" onClick={handleSelectImage} className="text-xs px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition-colors">
+                  Cambiar imagen
+                </button>
+                <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                  className="text-xs text-surface-400 bg-transparent border border-surface-200 dark:border-surface-700 rounded px-2 py-0.5 cursor-pointer hover:border-indigo-400 transition-colors" />
+              </div>
+              {newImagePath && <p className="text-[10px] text-emerald-500 mt-1 truncate">Nueva imagen seleccionada</p>}
             </div>
           </div>
           <div>

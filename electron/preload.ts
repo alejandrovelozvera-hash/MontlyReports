@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createDesign: (data: any) => ipcRenderer.invoke('designs:create', data),
   toggleDesignPaid: (id: string) => ipcRenderer.invoke('designs:togglePaid', id),
   deleteDesign: (id: string) => ipcRenderer.invoke('designs:delete', id),
+  replaceDesignImage: (id: string, filePath: string) => ipcRenderer.invoke('designs:replace-image', id, filePath),
 
   listTemplates: () => ipcRenderer.invoke('templates:list'),
   createTemplate: (data: any) => ipcRenderer.invoke('templates:create', data),
@@ -123,6 +124,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMigrationConfig: () => ipcRenderer.invoke('migration:get-config'),
   setSupabaseMode: (enabled: boolean) => ipcRenderer.invoke('migration:set-mode', enabled),
   getSupabaseMode: () => ipcRenderer.invoke('migration:get-mode'),
+  uploadPendingFiles: () => ipcRenderer.invoke('migration:upload-files'),
 
   // Events
   onExportProgress: (callback: (progress: number) => void) => {

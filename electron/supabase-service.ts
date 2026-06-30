@@ -6,6 +6,12 @@ let _supabaseKey = ''
 let _client: SupabaseClient | null = null
 let _enabled = false
 
+const _fetchWithTimeout: typeof fetch = (url, init) => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10000)
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, '').replace(/\/rest\/v1$/, '')
 }
@@ -30,6 +36,7 @@ function getSupabaseClient(): SupabaseClient {
     _client = createSupabaseClient(_supabaseUrl, _supabaseKey, {
       auth: { persistSession: false },
       realtime: { transport: WebSocket as any },
+      global: { fetch: _fetchWithTimeout },
     })
   }
   return _client
@@ -56,7 +63,7 @@ async function restUpsert(table: string, rows: any[], _conflictKey: string): Pro
 // Column mapping: SQLite column → Supabase column
 const TO_SUPABASE: Record<string, Record<string, string>> = {
   clients: { logo_path: 'logo_url' },
-  designs: { file_path: 'file_url', thumbnail_path: 'thumbnail_url' },
+  designs: { file_path: 'file_url', thumbnail_path: 'thumbnail_url', clientId: 'client_id', fileName: 'file_name', designDate: 'design_date' },
   reports: { file_path: 'file_url' },
 }
 const TO_LOCAL: Record<string, Record<string, string>> = {
@@ -476,11 +483,14 @@ export async function testConnection(): Promise<boolean> {
 
 // ── Storage upload ──
 
-export async function uploadFile(bucket: string, destPath: string, localPath: string): Promise<string> {
+export async function uploadFile(bucket: string, destPath: string, localPath: string, timeoutMs = 15000): Promise<string> {
   const fs = await import('fs')
   const buf = fs.readFileSync(localPath)
-  const { error } = await getSupabaseClient().storage.from(bucket).upload(destPath, buf, { upsert: true })
-  if (error) throw error
+  const result = await Promise.race([
+    getSupabaseClient().storage.from(bucket).upload(destPath, buf, { upsert: true }),
+    new Promise<{error: any}>((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutMs)),
+  ]) as any
+  if (result.error) throw result.error
   const { data: { publicUrl } } = getSupabaseClient().storage.from(bucket).getPublicUrl(destPath)
   return publicUrl
 }

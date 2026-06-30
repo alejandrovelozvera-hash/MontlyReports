@@ -68,6 +68,8 @@ declare global {
     getMigrationConfig: () => Promise<{ supabaseUrl: string; supabaseAnonKey: string }>
     setSupabaseMode: (enabled: boolean) => Promise<void>
     getSupabaseMode: () => Promise<boolean>
+    uploadPendingFiles: () => Promise<string[]>
+    replaceDesignImage: (id: string, filePath: string) => Promise<Design>
   }
 
   interface Client {

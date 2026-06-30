@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Jimp } from 'jimp'
 import { getDb, queryAll, queryOne, execute, closeDb, saveDb } from './db'
 import { generatePDF, generateProformaPDF } from './pdf-generator'
-import { configureSupabase, runMigration } from './migrate-to-supabase'
+import { configureSupabase, runMigration, uploadPendingFiles } from './migrate-to-supabase'
 import * as supabaseService from './supabase-service'
 
 let archiver: any = null
@@ -86,6 +86,11 @@ async function createWindow() {
   mainWindow.on('close', () => {
     if (process.platform === 'win32') app.quit()
   })
+  mainWindow.webContents.on('before-input-event', (_e, input) => {
+    if (input.key === 'F12' && input.type === 'keyDown') {
+      mainWindow?.webContents.toggleDevTools()
+    }
+  })
 }
 
 function registerMediaProtocol() {
@@ -131,7 +136,7 @@ async function compressImage(inputPath: string, outputPath: string): Promise<voi
 async function generateThumbnail(inputPath: string, outputPath: string): Promise<void> {
   try {
     const image = await Jimp.read(inputPath) as any
-    image.cover({ w: 400, h: 300 })
+    image.scaleToFit({ w: 400, h: 300 })
     await image.write(outputPath, { quality: 70 } as any)
   } catch {
     // silently fail if thumbnail can't be made
@@ -141,16 +146,13 @@ async function generateThumbnail(inputPath: string, outputPath: string): Promise
 async function compressAndCopyImage(srcPath: string, destDir: string, fileName: string): Promise<{ filePath: string; thumbPath: string }> {
   if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true })
   const ext = path.extname(srcPath).toLowerCase()
-  const nameWithoutExt = path.basename(fileName, ext)
   const destPath = path.join(destDir, fileName)
-  const thumbPath = path.join(destDir, `${nameWithoutExt}_thumb${ext}`)
   if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
     await compressImage(srcPath, destPath)
-    await generateThumbnail(destPath, thumbPath)
   } else {
     fs.copyFileSync(srcPath, destPath)
   }
-  return { filePath: destPath, thumbPath: fs.existsSync(thumbPath) ? thumbPath : destPath }
+  return { filePath: destPath, thumbPath: destPath }
 }
 
 function sendProgress(progress: number) {
@@ -216,7 +218,16 @@ function registerIpcHandlers() {
 
   // -- Logo --
   ipcMain.handle('clients:upload-logo', async (_event, clientId, filePath) => {
-    if (supabaseService.isEnabled()) return supabaseService.uploadClientLogo(clientId, filePath)
+    if (supabaseService.isEnabled()) {
+      const logosDir = path.join(app.getPath('userData'), 'logos_temp')
+      const ext = path.extname(filePath) || '.png'
+      const { filePath: compressedPath } = await compressAndCopyImage(filePath, logosDir, `${clientId}${ext}`)
+      try {
+        return await supabaseService.uploadClientLogo(clientId, compressedPath)
+      } catch {
+        return supabaseService.uploadClientLogo(clientId, filePath)
+      }
+    }
     const logosDir = path.join(app.getPath('userData'), 'logos')
     const ext = path.extname(filePath) || '.png'
     const destPath = await compressAndCopyImage(filePath, logosDir, `${clientId}${ext}`)
@@ -250,7 +261,21 @@ function registerIpcHandlers() {
       const designsDir = path.join(app.getPath('userData'), 'designs', data.clientId)
       const ext = path.extname(data.filePath) || '.jpg'
       const { filePath, thumbPath } = await compressAndCopyImage(data.filePath, designsDir, `${id}${ext}`)
-      return supabaseService.createDesign({ id, ...data, file_path: filePath, thumbnail_path: thumbPath })
+      const result = await supabaseService.createDesign({ id, clientId: data.clientId, title: data.title, description: data.description || '', category: data.category || '', sort_order: data.sortOrder ?? 0, file_name: data.fileName, file_path: filePath, thumbnail_path: thumbPath, design_date: data.designDate, price: data.price ?? 0, platform: data.platform || '', platform_cost: data.platform_cost ?? 0 })
+      // Fire-and-forget upload to Storage — no bloquea al usuario
+      supabaseService.uploadFile('designs', `${data.clientId}/${id}${ext}`, filePath, 10000)
+        .then(async (fileUrl) => {
+          if (fileUrl) supabaseService.updateDesign(id, { file_url: fileUrl })
+        })
+        .catch(() => {})
+      if (thumbPath && fs.existsSync(thumbPath)) {
+        supabaseService.uploadFile('designs', `${data.clientId}/${id}_thumb${ext}`, thumbPath, 10000)
+          .then(async (thumbUrl) => {
+            if (thumbUrl) supabaseService.updateDesign(id, { thumbnail_url: thumbUrl })
+          })
+          .catch(() => {})
+      }
+      return result
     }
     const id = uuidv4()
     const designsDir = path.join(app.getPath('userData'), 'designs', data.clientId)
@@ -269,6 +294,28 @@ function registerIpcHandlers() {
       if (v !== undefined) { fields.push(`${k} = ?`); values.push(v) }
     }
     if (fields.length > 0) { values.push(id); execute(`UPDATE designs SET ${fields.join(', ')} WHERE id = ?`, values) }
+    return queryOne('SELECT * FROM designs WHERE id = ?', [id])
+  })
+
+  ipcMain.handle('designs:replace-image', async (_event, id: string, newPath: string) => {
+    const design = supabaseService.isEnabled()
+      ? await supabaseService.getDesign(id)
+      : queryOne('SELECT * FROM designs WHERE id = ?', [id]) as any
+    if (!design) throw new Error('Design not found')
+    const clientId = design.client_id || design.clientId
+    const designsDir = path.join(app.getPath('userData'), 'designs', clientId)
+    const ext = path.extname(newPath) || '.jpg'
+    if (design.file_path && fs.existsSync(design.file_path)) fs.unlinkSync(design.file_path)
+    if (design.thumbnail_path && fs.existsSync(design.thumbnail_path)) fs.unlinkSync(design.thumbnail_path)
+    const { filePath } = await compressAndCopyImage(newPath, designsDir, `${id}${ext}`)
+    if (supabaseService.isEnabled()) {
+      const updated = await supabaseService.updateDesign(id, { file_path: filePath, file_name: path.basename(newPath) })
+      supabaseService.uploadFile('designs', `${clientId}/${id}${ext}`, filePath, 10000).then((url) => {
+        if (url) supabaseService.updateDesign(id, { file_url: url })
+      }).catch(() => {})
+      return updated
+    }
+    execute('UPDATE designs SET file_path = ?, file_name = ?, thumbnail_path = ? WHERE id = ?', [filePath, path.basename(newPath), '', id])
     return queryOne('SELECT * FROM designs WHERE id = ?', [id])
   })
 
@@ -981,6 +1028,12 @@ function registerIpcHandlers() {
 
   ipcMain.handle('migration:set-mode', async (_event, enabled: boolean) => {
     saveSupabaseMode(enabled)
+  })
+
+  ipcMain.handle('migration:upload-files', async () => {
+    const logs: string[] = []
+    await uploadPendingFiles((msg) => { logs.push(msg); console.log(msg) })
+    return logs
   })
 
   ipcMain.handle('migration:get-mode', () => {

@@ -231,3 +231,61 @@ export async function runMigration(onProgress?: (msg: string) => void) {
   log('Migracion completada exitosamente.')
   log(`Los datos estan en Supabase. Respaldo local en: ${baseDir}`)
 }
+
+export async function uploadPendingFiles(onProgress?: (msg: string) => void) {
+  const log = (msg: string) => { console.log(`[Upload] ${msg}`); onProgress?.(msg) }
+  const supabase = getSupabase()
+
+  const designs = queryAll('SELECT * FROM designs ORDER BY id')
+  const clients = queryAll('SELECT * FROM clients ORDER BY id')
+
+  let uploaded = 0
+  let total = 0
+
+  for (const d of designs) {
+    if (d.file_path && fs.existsSync(d.file_path)) {
+      total++
+      const ext = path.extname(d.file_path) || '.jpg'
+      const dest = `${d.client_id}/${d.id}${ext}`
+      const buf = fs.readFileSync(d.file_path)
+      const { error } = await supabase.storage.from('designs').upload(dest, buf, { upsert: true })
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('designs').getPublicUrl(dest)
+        await supabase.from('designs').update({ file_url: publicUrl }).eq('id', d.id)
+        uploaded++
+      } else {
+        log(`  Error subiendo ${d.title}: ${error.message}`)
+      }
+    }
+    if (d.thumbnail_path && fs.existsSync(d.thumbnail_path)) {
+      const ext = path.extname(d.thumbnail_path) || '.jpg'
+      const dest = `${d.client_id}/${d.id}_thumb${ext}`
+      const buf = fs.readFileSync(d.thumbnail_path)
+      const { error } = await supabase.storage.from('designs').upload(dest, buf, { upsert: true })
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('designs').getPublicUrl(dest)
+        await supabase.from('designs').update({ thumbnail_url: publicUrl }).eq('id', d.id)
+      }
+    }
+  }
+
+  log(`Subidas ${uploaded}/${total} imagenes de disenos`)
+
+  let logoCount = 0
+  for (const c of clients) {
+    if (c.logo_path && fs.existsSync(c.logo_path)) {
+      const ext = path.extname(c.logo_path) || '.jpg'
+      const dest = `${c.id}/logo${ext}`
+      const buf = fs.readFileSync(c.logo_path)
+      const { error } = await supabase.storage.from('logos').upload(dest, buf, { upsert: true })
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(dest)
+        await supabase.from('clients').update({ logo_url: publicUrl }).eq('id', c.id)
+        logoCount++
+      }
+    }
+  }
+  log(`${logoCount} logos subidos`)
+
+  log('Archivos subidos exitosamente')
+}

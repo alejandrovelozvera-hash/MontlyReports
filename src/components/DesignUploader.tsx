@@ -54,6 +54,8 @@ export default function DesignUploader({ clientId, month, year, onClose }: Props
         designDate,
       })
       onClose()
+    } catch (err: any) {
+      alert(`Error al subir: ${err?.message || 'Desconocido'}`)
     } finally {
       setSaving(false)
     }

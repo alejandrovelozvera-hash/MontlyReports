@@ -655,6 +655,7 @@ function SupabaseMigration() {
   const [saved, setSaved] = useState(false)
   const [supabaseMode, setSupabaseMode] = useState(false)
   const [toggleLoading, setToggleLoading] = useState(true)
+  const [uploadingFiles, setUploadingFiles] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -685,6 +686,20 @@ function SupabaseMigration() {
       setLogs((prev) => [...prev, `ERROR: ${e.message || e}`])
     } finally {
       setMigrating(false)
+    }
+  }
+
+  async function handleUploadFiles() {
+    if (!url || !anonKey) return
+    setUploadingFiles(true)
+    setLogs([])
+    try {
+      const result = await window.electronAPI.uploadPendingFiles()
+      setLogs(result)
+    } catch (e: any) {
+      setLogs(prev => [...prev, `ERROR: ${e.message || e}`])
+    } finally {
+      setUploadingFiles(false)
     }
   }
 
@@ -745,12 +760,15 @@ function SupabaseMigration() {
             <input type="text" value={anonKey} onChange={(e) => setAnonKey(e.target.value)}
               className="input font-mono text-xs" placeholder="eyJhbGciOiJIUzI1NiIs..." />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={handleSave} className="btn-secondary text-sm">
               {saved ? 'Guardado ✓' : 'Guardar configuración'}
             </button>
             <button onClick={handleMigrate} disabled={migrating || !url || !anonKey} className="btn-primary text-sm">
               {migrating ? 'Migrando...' : 'Migrar a Supabase'}
+            </button>
+            <button onClick={handleUploadFiles} disabled={uploadingFiles || !url || !anonKey} className="btn-secondary text-sm">
+              {uploadingFiles ? 'Subiendo...' : 'Subir archivos pendientes'}
             </button>
           </div>
         </div>
