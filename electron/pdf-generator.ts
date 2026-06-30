@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import fs from 'fs'
 import path from 'path'
-import Jimp from 'jimp'
+import { Jimp } from 'jimp'
 
 interface Client {
   id: string; name: string; email: string; company: string
@@ -10,6 +10,7 @@ interface Client {
 interface Design {
   id: string; title: string; description: string; category: string
   file_path: string; design_date: string; price?: number
+  platform?: string; platform_cost?: number
 }
 interface GeneratePDFParams {
   client: Client; designs: Design[]; month: number; year: number
@@ -34,12 +35,11 @@ function getImgBase64(fp: string): {data:string,fmt:string}|null {
 
 async function optimizeImage(fp: string, maxW: number, quality: number): Promise<{data:string,fmt:string}|null> {
   try {
-    const img = await Jimp.read(fp)
+    const img = await Jimp.read(fp) as any
     if (img.bitmap.width > maxW) {
       img.resize({ w: maxW })
     }
-    img.quality(quality)
-    const buf = await img.getBufferAsync('image/jpeg')
+    const buf = await img.getBuffer('image/jpeg', { quality } as any)
     return { data: buf.toString('base64'), fmt: 'JPEG' }
   } catch {
     return getImgBase64(fp)
@@ -77,7 +77,9 @@ export async function generatePDF({
   const GREEN: [number,number,number]=[34,197,94]
   const WHITE: [number,number,number]=[255,255,255]
 
-  const total=designs.reduce((s,d)=>s+(d.price||0),0)
+  const totalDesigns=designs.reduce((s,d)=>s+(d.price||0),0)
+  const totalPlatform=designs.reduce((s,d)=>s+(d.platform_cost||0),0)
+  const total=totalDesigns+totalPlatform
   onProgress(5)
 
   // Precargar logo de la empresa
@@ -112,24 +114,24 @@ export async function generatePDF({
       const ar = p.width / p.height
       const logoW = 72
       logoH = logoW / ar
-      doc.addImage(companyLogoData.data, companyLogoData.fmt, 8.9, 81, logoW, logoH)
+      doc.addImage(companyLogoData.data, companyLogoData.fmt, 8.9, y, logoW, logoH)
     } catch {}
   }
   if (company?.name) {
     doc.setFontSize(18); doc.setTextColor(...TEXT)
-    doc.text(company.name, pw - M, 88, { align: 'right' })
+    doc.text(company.name, pw - M, y + 7, { align: 'right' })
     const ci: string[] = []
     if (company.ruc) ci.push(`RUC: ${company.ruc}`)
     if (company.phone) ci.push(`Tel: ${company.phone}`)
     if (company.website) ci.push(company.website)
     if (ci.length > 0) {
       doc.setFontSize(7); doc.setTextColor(...MUTED)
-      doc.text(ci.join(' | '), pw - M, 95, { align: 'right' })
+      doc.text(ci.join(' | '), pw - M, y + 14, { align: 'right' })
     }
   }
 
   // ── HEADER: nombre cliente + mes ──
-  y = Math.max(81 + logoH + 10, 115)
+  y = Math.max(y + logoH + 8, 50)
   let lx=0
   if(client.logo_path){
     const logo=cache.get(client.logo_path)
@@ -151,27 +153,32 @@ export async function generatePDF({
 
   // Cabecera tabla
   doc.setFillColor(...accent);doc.rect(M,y,cw,5.5,'F')
-  doc.setFontSize(6.5);doc.setTextColor(...WHITE)
+  doc.setFontSize(6);doc.setTextColor(...WHITE)
   doc.text('Diseño',M+2,y+3.8)
-  doc.text('Fecha',M+90,y+3.8)
-  doc.text('Categoría',M+115,y+3.8)
+  doc.text('Fecha',M+75,y+3.8)
+  doc.text('Categoría',M+102,y+3.8)
+  doc.text('Plataforma',M+128,y+3.8)
   doc.text('Precio',pw-M-2,y+3.8,{align:'right'})
   y+=6.5
 
   let alt=false
   for(const d of designs){
-    if(y+5>70)break // tabla solo en header, máx hasta y=70
+    if(y+5>190)break
     doc.setFillColor(...(alt
       ?(isDark?[32,32,42]as[number,number,number]:[249,249,252]as[number,number,number])
       :BG))
     doc.rect(M,y,cw,5,'F');alt=!alt
-    const t=d.title.length>42?d.title.substring(0,40)+'…':d.title
+    const t=d.title.length>36?d.title.substring(0,34)+'…':d.title
     const dd=new Date(d.design_date)
-    const ds=`${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}/${dd.getFullYear()}`
-    doc.setFontSize(6.5);doc.setTextColor(...TEXT);doc.text(t,M+2,y+3.5)
+    const ds=isNaN(dd.getTime())?'—':`${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}/${dd.getFullYear()}`
+    doc.setFontSize(6);doc.setTextColor(...TEXT);doc.text(t,M+2,y+3.5)
     doc.setTextColor(...MUTED)
-    doc.text(ds,M+90,y+3.5)
-    doc.text(d.category||'—',M+115,y+3.5)
+    doc.text(ds,M+75,y+3.5)
+    doc.text(d.category||'—',M+102,y+3.5)
+    const plat=d.platform||'—'
+    if(d.platform){doc.setTextColor(...accent);doc.setFontSize(5.5)}else{doc.setTextColor(...MUTED);doc.setFontSize(6)}
+    doc.text(plat,M+128,y+3.5)
+    doc.setFontSize(6)
     if(d.price&&d.price>0){doc.setTextColor(...GREEN);doc.text(`$${d.price.toFixed(2)}`,pw-M-2,y+3.5,{align:'right'})}
     else{doc.setTextColor(...MUTED);doc.text('—',pw-M-2,y+3.5,{align:'right'})}
     y+=5
@@ -180,8 +187,15 @@ export async function generatePDF({
   // Total debajo de tabla
   doc.setDrawColor(...accent);doc.setLineWidth(0.3);doc.line(M,y,pw-M,y);y+=3
   if(total>0){
-    doc.setFontSize(8.5);doc.setTextColor(...GREEN)
-    doc.text(`TOTAL  $${total.toFixed(2)}`,pw-M,y+3,{align:'right'})
+    doc.setFontSize(7);doc.setTextColor(...GREEN)
+    if(totalPlatform>0){
+      doc.text(`Diseños: $${totalDesigns.toFixed(2)}`,pw-M-2,y+2.5,{align:'right'})
+      y+=4
+      doc.text(`Pauta: $${totalPlatform.toFixed(2)}`,pw-M-2,y+2.5,{align:'right'})
+      y+=4
+    }
+    doc.setFontSize(8.5)
+    doc.text(`TOTAL  $${total.toFixed(2)}`,pw-M-2,y+3,{align:'right'})
   }
   y+=8
 
@@ -215,28 +229,50 @@ export async function generatePDF({
 
     // Imagen
     const img=cache.get(d.file_path||'')
-    if(img)drawImg(doc,img.data,img.fmt,tx+1,y+1,TW-2,TH-10)
+    if(img)drawImg(doc,img.data,img.fmt,tx+1,y+1,TW-2,TH-12)
+
+    // Badge "PAUTADO" si tiene plataforma
+    if(d.platform){
+      doc.setFillColor(...accent)
+      doc.roundedRect(tx+TW-18,y+2,16,4.5,1,1,'F')
+      doc.setFontSize(3.5);doc.setTextColor(...WHITE)
+      doc.text('PAUTADO',tx+TW-10,y+5,{align:'center'})
+    }
 
     // Fondo semi-transparente para texto abajo
     doc.setFillColor(...(isDark?[20,20,30]as[number,number,number]:[230,230,235]as[number,number,number]))
-    doc.rect(tx,y+TH-10,TW,10,'F')
+    doc.rect(tx,y+TH-12,TW,12,'F')
 
     // Título
     doc.setFontSize(5.5);doc.setTextColor(...TEXT)
     const t=d.title.length>20?d.title.substring(0,18)+'…':d.title
-    doc.text(t,tx+2,y+TH-6)
+    doc.text(t,tx+2,y+TH-8.5)
+
+    // Descripción
+    if(d.description){
+      doc.setFontSize(4.5);doc.setTextColor(...MUTED)
+      const desc=d.description.length>28?d.description.substring(0,26)+'…':d.description
+      doc.text(desc,tx+2,y+TH-4.5)
+    }
 
     // Precio en la foto
     if(d.price&&d.price>0){
-      doc.setFontSize(6);doc.setTextColor(...GREEN)
-      doc.text(`$${d.price.toFixed(2)}`,tx+TW-2,y+TH-6,{align:'right'})
+      doc.setFontSize(5.5);doc.setTextColor(...GREEN)
+      doc.text(`$${d.price.toFixed(2)}`,tx+TW-2,y+TH-8.5,{align:'right'})
+    }
+
+    // Platform + platform_cost
+    if(d.platform){
+      doc.setFontSize(4.5);doc.setTextColor(...MUTED)
+      const platText=(d.platform_cost??0)>0?`${d.platform} $${(d.platform_cost??0).toFixed(2)}`:d.platform
+      doc.text(platText,tx+TW-2,y+TH-4.5,{align:'right'})
     }
 
     // Fecha pequeña
     const dd=new Date(d.design_date)
-    const ds=`${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}`
+    const ds=isNaN(dd.getTime())?'—':`${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}`
     doc.setFontSize(4.5);doc.setTextColor(...MUTED)
-    doc.text(ds,tx+2,y+TH-2)
+    doc.text(ds,tx+2,y+TH-1)
 
     col++
     if(col>=COLS){col=0;row++;y+=TH+3}
@@ -276,12 +312,26 @@ export async function generatePDF({
       if(gy+TH>ph-16)break
       doc.setFillColor(...CARD);doc.roundedRect(tx,gy,TW,TH,1.5,1.5,'F')
       const img=cache.get(d.file_path||'')
-      if(img)drawImg(doc,img.data,img.fmt,tx+1,gy+1,TW-2,TH-10)
+      if(img)drawImg(doc,img.data,img.fmt,tx+1,gy+1,TW-2,TH-12)
+      if(d.platform){
+        doc.setFillColor(...accent)
+        doc.roundedRect(tx+TW-18,gy+2,16,4.5,1,1,'F')
+        doc.setFontSize(3.5);doc.setTextColor(...WHITE)
+        doc.text('PAUTADO',tx+TW-10,gy+5,{align:'center'})
+      }
       doc.setFillColor(...(isDark?[20,20,30]as[number,number,number]:[230,230,235]as[number,number,number]))
-      doc.rect(tx,gy+TH-10,TW,10,'F')
+      doc.rect(tx,gy+TH-12,TW,12,'F')
       doc.setFontSize(5.5);doc.setTextColor(...TEXT)
-      doc.text(d.title.length>20?d.title.substring(0,18)+'…':d.title,tx+2,gy+TH-6)
-      if(d.price&&d.price>0){doc.setTextColor(...GREEN);doc.text(`$${d.price.toFixed(2)}`,tx+TW-2,gy+TH-6,{align:'right'})}
+      doc.text(d.title.length>20?d.title.substring(0,18)+'…':d.title,tx+2,gy+TH-8.5)
+      if(d.description){
+        doc.setFontSize(4.5);doc.setTextColor(...MUTED)
+        doc.text(d.description.length>28?d.description.substring(0,26)+'…':d.description,tx+2,gy+TH-4.5)
+      }
+      if(d.price&&d.price>0){doc.setTextColor(...GREEN);doc.text(`$${d.price.toFixed(2)}`,tx+TW-2,gy+TH-8.5,{align:'right'})}
+      if(d.platform){
+        doc.setFontSize(4.5);doc.setTextColor(...MUTED)
+        doc.text((d.platform_cost??0)>0?`${d.platform} $${(d.platform_cost??0).toFixed(2)}`:d.platform,tx+TW-2,gy+TH-4.5,{align:'right'})
+      }
       ec++
       if(ec>=COLS){ec=0;gy+=TH+3}
     }
