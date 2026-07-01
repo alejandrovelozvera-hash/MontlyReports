@@ -14,7 +14,10 @@
     --glass-bg: rgba(255,255,255,0.55);
     --glass-border: rgba(255,255,255,0.75);
     --glass-blur: blur(20px);
-    --app-bg: linear-gradient(135deg,#e8eaff 0%,#f0e8ff 45%,#e8f2ff 100%);
+    --app-bg: linear-gradient(160deg,#f4f6fd 0%,#f8f4ff 45%,#f0f6ff 100%);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
   }
 
   /* Select / option fix */
@@ -46,7 +49,7 @@
     --border: 64 64 64;
     --glass-bg: rgba(30,30,45,0.6);
     --glass-border: rgba(255,255,255,0.08);
-    --app-bg: linear-gradient(135deg,#0f0f1a 0%,#1a0f2e 45%,#0f1a2e 100%);
+    --app-bg: linear-gradient(160deg,#0d0d14 0%,#141420 45%,#0f1420 100%);
   }
 
   body {
@@ -83,6 +86,9 @@
     -webkit-backdrop-filter: var(--glass-blur);
     border-right: 0.5px solid var(--glass-border);
   }
+
+  /* Labels */
+  .label { @apply block text-xs font-medium tracking-wide text-surface-500 dark:text-surface-400 mb-1.5; }
 
   /* Buttons */
   .btn {
@@ -124,10 +130,20 @@
   }
 
   .btn-icon { @apply btn p-2 rounded-xl; }
+  .btn-sm { @apply btn px-3 py-1.5 text-xs rounded-lg; }
+  .btn-lg { @apply btn px-6 py-3 text-base rounded-xl; }
 
   /* Cards */
-  .card { @apply glass-card p-5; }
-  .card-sm { @apply glass-card p-3; }
+  .card { @apply glass-card p-5 transition-all duration-200; }
+  .card-sm { @apply glass-card p-3 transition-all duration-200; }
+  .card-elevated { @apply card; box-shadow: var(--shadow-lg); }
+  .card-flat {
+    @apply p-5 rounded-2xl;
+    background: rgb(var(--bg-primary));
+    border: 0.5px solid rgb(var(--border));
+  }
+  .card-hover { @apply card cursor-pointer; }
+  .card-hover:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 
   /* Inputs */
   .input {
@@ -138,6 +154,10 @@
     color: rgb(var(--text-primary));
   }
   .input:focus { border-color: rgba(80,70,181,0.5); box-shadow: 0 0 0 3px rgba(80,70,181,0.1); }
+  .input:disabled { @apply opacity-50 cursor-not-allowed; background: rgba(0,0,0,0.03); }
+  .dark .input:disabled { background: rgba(255,255,255,0.03); }
+  .input-error { border-color: rgba(239,68,68,0.5) !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.1) !important; }
+  .input-success { border-color: rgba(29,158,117,0.5) !important; box-shadow: 0 0 0 3px rgba(29,158,117,0.1) !important; }
   .dark .input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
 
   /* Segmented control */
@@ -178,10 +198,20 @@
     @apply fixed inset-0 z-50 flex items-center justify-center p-4;
     background: rgba(0,0,0,0.3);
     backdrop-filter: blur(4px);
+    animation: dialogOverlayIn 0.2s ease-out;
   }
   .dialog-panel {
     @apply glass-card w-full max-w-lg max-h-[90vh] overflow-y-auto;
     box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+    animation: dialogPanelIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes dialogOverlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes dialogPanelIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
   /* Page transition */
@@ -205,5 +235,26 @@
   @keyframes previewIn {
     from { opacity:0; transform:scale(0.94); }
     to   { opacity:1; transform:scale(1); }
+  }
+
+  /* Typography refinement */
+  .page-heading { @apply text-2xl font-semibold text-surface-900 dark:text-surface-100; letter-spacing: -0.03em; }
+  .stat-value { @apply text-3xl font-semibold; letter-spacing: -0.03em; }
+  .section-heading { @apply text-base font-semibold text-surface-700 dark:text-surface-300; letter-spacing: -0.01em; }
+
+  /* Skeleton loading */
+  .skeleton {
+    background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s ease-in-out infinite;
+    border-radius: 8px;
+  }
+  .dark .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+  }
+  @keyframes skeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 }

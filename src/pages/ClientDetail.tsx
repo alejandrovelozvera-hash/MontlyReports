@@ -433,8 +433,11 @@ export default function ClientDetail() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="space-y-3">
+          <div className="h-10 skeleton rounded-xl w-48" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {[1,2,3,4,5,6].map(i => <div key={i} className="h-44 rounded-2xl skeleton" />)}
+          </div>
         </div>
       ) : visible.length === 0 ? (
         <div className="card p-12 text-center">
@@ -487,7 +490,7 @@ export default function ClientDetail() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {visible.map((d, i) => (
             <div key={d.id} draggable onDragStart={() => handleDragStart(i)} onDragEnter={() => handleDragEnter(i)} onDragEnd={handleDragEnd} onDragOver={(e) => e.preventDefault()}
-              className={`card group overflow-hidden transition-all duration-200 ${selected.has(d.id) ? 'ring-2 ring-indigo-500' : ''} ${d.platform ? 'ring-2 ring-indigo-400/50 dark:ring-indigo-500/50' : ''} ${dragOver.current === i ? 'opacity-60 scale-95' : ''}`}>
+              className={`card group overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${selected.has(d.id) ? 'ring-2 ring-indigo-500' : ''} ${d.platform ? 'ring-2 ring-indigo-400/50 dark:ring-indigo-500/50' : ''} ${dragOver.current === i ? 'opacity-60 scale-95' : ''}`}>
               <div className="relative">
                 <button onClick={() => setPreviewIndex(i)} className="w-full min-h-[200px] bg-surface-100 dark:bg-surface-800 relative flex items-center justify-center">
                   <img src={window.electronAPI.getImageUrl(d.thumbnail_path || d.file_path)} alt={d.title}

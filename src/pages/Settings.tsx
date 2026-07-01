@@ -42,7 +42,7 @@ export default function Settings() {
   return (
     <div className="space-y-6 page-enter">
       <div>
-        <h2 className="text-2xl font-semibold text-surface-900 dark:text-surface-100 tracking-tight">Configuración</h2>
+        <h2 className="page-heading">Configuración</h2>
         <p className="text-sm text-surface-500 mt-1">Backup, empresa, productos y ajustes</p>
       </div>
 
@@ -186,7 +186,7 @@ function CompanySettings() {
 
   return (
     <div className="space-y-5 max-w-lg">
-      <div className="card p-5">
+      <div className="card-flat">
         <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">Datos de la empresa</h4>
         <div className="space-y-4">
           <div>
@@ -580,11 +580,11 @@ function ProformaTemplateManager() {
     setTemplateInfo({ path: null, previewPath: null, exists: false })
   }
 
-  if (loading) return <div className="flex items-center justify-center h-32"><div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
+  if (loading) return <div className="space-y-4"><div className="h-12 skeleton rounded-xl w-64" /><div className="h-64 skeleton rounded-2xl" /></div>
 
   return (
     <div className="space-y-5 max-w-lg">
-      <div className="card p-5">
+      <div className="card-flat">
         <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-2">Plantilla de Proforma</h4>
         <p className="text-xs text-surface-400 mb-4">
           Sube un diseño creado en Affinity (PDF, PNG o JPG). Será usado como fondo de todas las proformas.
@@ -621,7 +621,7 @@ function ProformaTemplateManager() {
         )}
       </div>
 
-      <div className="card p-5">
+      <div className="card-flat">
         <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-2">Posiciones de los campos</h4>
         <p className="text-xs text-surface-400 mb-3">
           Los datos se colocan automáticamente en estas posiciones. Diseña tu plantilla dejando espacios en blanco aquí:
@@ -712,7 +712,7 @@ function SupabaseMigration() {
 
   return (
     <div className="space-y-5 max-w-lg">
-      <div className="card p-5 space-y-4">
+      <div className="card-flat space-y-4">
         <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-100">Supabase / Nube</h4>
         <p className="text-xs text-surface-400">
           Conecta la aplicación a Supabase para mantener los datos sincronizados entre computadoras.
@@ -738,7 +738,7 @@ function SupabaseMigration() {
         </div>
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card-flat space-y-4">
         <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-100">Migrar datos a Supabase</h4>
         <p className="text-xs text-surface-400">
           Sube tus datos locales a Supabase para acceder desde cualquier computadora.

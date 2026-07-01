@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TitleBar from './TitleBar'
 import ToastContainer from './Toast'
@@ -12,6 +12,7 @@ export default function Layout() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showProforma, setShowProforma] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => { loadClients() }, [])
 
@@ -53,7 +54,7 @@ export default function Layout() {
       <Sidebar darkMode={darkMode} onToggleDarkMode={toggleDarkMode} onOpenProforma={() => setShowProforma(true)} />
       <main className="flex-1 overflow-y-auto p-6 relative">
         <ToastContainer />
-        <div className="page-enter"><Outlet /></div>
+        <div key={location.pathname} className="page-enter"><Outlet /></div>
 
         {/* Keyboard shortcuts modal */}
         {showShortcuts && (

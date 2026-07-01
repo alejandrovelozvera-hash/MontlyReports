@@ -76,8 +76,11 @@ export default function Finance() {
   const maxRevenue = Math.max(...monthStats.map((m) => m.revenue), 1)
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        {[1,2,3].map(i => <div key={i} className="h-24 rounded-2xl skeleton" />)}
+      </div>
+      <div className="h-64 rounded-2xl skeleton" />
     </div>
   )
 
@@ -85,7 +88,7 @@ export default function Finance() {
     <div className="space-y-6 page-enter">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-surface-900 dark:text-surface-100 tracking-tight">Finanzas</h2>
+          <h2 className="page-heading">Finanzas</h2>
           <p className="text-sm text-surface-500 mt-1">Resumen de ingresos y pagos</p>
         </div>
         <button onClick={() => setShowProforma(true)} className="btn-secondary shrink-0">

@@ -24,7 +24,7 @@ export default function Clients() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight" style={{color:'rgb(var(--text-primary))'}}>Clientes</h2>
+          <h2 className="page-heading">Clientes</h2>
           <p className="text-sm mt-1" style={{color:'rgb(var(--text-secondary))'}}>
             {clients.length} cliente{clients.length !== 1 ? 's' : ''}
           </p>
@@ -48,8 +48,8 @@ export default function Clients() {
       </div>
 
       {loading && clients.length === 0 ? (
-        <div className="flex items-center justify-center h-48">
-          <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor:'rgba(80,70,181,0.3)',borderTopColor:'rgb(80,70,181)'}}/>
+        <div className="space-y-3">
+          {[1,2,3,4,5].map(i => <div key={i} className="h-20 rounded-2xl skeleton" />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="glass-card p-12 text-center">
@@ -71,7 +71,7 @@ export default function Clients() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((client) => (
-            <div key={client.id} className="glass-card overflow-hidden hover:shadow-lg transition-all duration-200 group">
+            <div key={client.id} className="glass-card overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
               <button onClick={() => navigate(`/clients/${client.id}`)} className="w-full p-5 text-left">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-semibold text-base shrink-0 shadow-sm"

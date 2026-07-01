@@ -38,20 +38,20 @@ export default function Sidebar({ darkMode, onToggleDarkMode, onOpenProforma }: 
             </p>
             <div className="space-y-0.5">
               {sec.links.map(link => (
-                <NavLink key={link.to} to={link.to} end={link.to === '/'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                      isActive
-                        ? 'text-indigo-700 dark:text-indigo-300'
-                        : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'
-                    }`
-                  }
-                  style={({ isActive }) => isActive ? {background:'rgba(80,70,181,0.1)'} : {}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="shrink-0">
-                    <path d={link.icon}/>
-                  </svg>
-                  {link.label}
-                </NavLink>
+                  <NavLink key={link.to} to={link.to} end={link.to === '/'}
+                    className={({ isActive }) =>
+                      `group flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                        isActive
+                          ? 'text-indigo-700 dark:text-indigo-300'
+                          : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'
+                      }`
+                    }
+                    style={({ isActive }) => isActive ? {background:'rgba(80,70,181,0.1)'} : {}}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="shrink-0 transition-transform duration-200 group-hover:scale-110">
+                      <path d={link.icon}/>
+                    </svg>
+                    {link.label}
+                  </NavLink>
               ))}
               {sec.label === 'Principal' && (
                 <button onClick={onOpenProforma}

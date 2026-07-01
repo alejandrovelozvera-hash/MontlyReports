@@ -83,8 +83,11 @@ export default function Dashboard() {
 
   if (loading && clients.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-2xl skeleton" />)}
+        </div>
+        <div className="h-32 rounded-2xl skeleton" />
       </div>
     )
   }
@@ -93,7 +96,7 @@ export default function Dashboard() {
     <div className="space-y-6 page-enter">
       <div className="flex items-center justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-semibold text-surface-900 dark:text-surface-100 tracking-tight">Dashboard</h2>
+          <h2 className="page-heading">Dashboard</h2>
           <p className="text-sm text-surface-500 mt-1">Resumen de actividad — {month} {year}</p>
         </div>
         <div className="w-72">
@@ -109,18 +112,18 @@ export default function Dashboard() {
           { label: `Diseños ${month}`, value: stats.thisMonth, color: 'rgba(80,70,181,1)' },
           ...(stats.monthRevenue > 0 ? [{ label: `Ingresos ${month}`, value: `$${stats.monthRevenue.toFixed(2)}`, color: 'rgb(29,158,117)' }] : []),
         ].map((s, i) => (
-          <div key={i} className="glass-card p-5">
+          <div key={i} className="card-elevated">
             <p className="text-[10px] font-semibold tracking-widest uppercase" style={{color:'rgb(var(--text-secondary))'}}>
               {s.label}
             </p>
-            <p className="text-3xl font-semibold mt-2 tracking-tight" style={{color:s.color}}>{s.value}</p>
+            <p className="stat-value mt-2" style={{color:s.color}}>{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* Meta mensual */}
       {(goal > 0 || editingGoal) && (
-        <div className="glass-card p-5">
+        <div className="card-elevated">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase" style={{color:'rgb(var(--text-secondary))'}}>Meta mensual</p>
@@ -245,7 +248,7 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {clients.map((client) => (
-              <div key={client.id} className="card group hover:shadow-md transition-all duration-200">
+              <div key={client.id} className="card-hover">
                 <button onClick={() => navigate(`/clients/${client.id}`)} className="w-full p-5 text-left">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold text-sm shrink-0" style={{ backgroundColor: client.color }}>
