@@ -242,6 +242,14 @@ export async function uploadPendingFiles(onProgress?: (msg: string) => void) {
   let uploaded = 0
   let total = 0
 
+  // Primero verificar Storage buckets
+  for (const bucket of ['designs', 'logos', 'company']) {
+    const { error } = await supabase.storage.getBucket(bucket)
+    if (error) {
+      log(`ERROR: Bucket '${bucket}' no existe. Créalo en Supabase SQL Editor: SELECT create_storage_bucket('${bucket}')`)
+    }
+  }
+
   for (const d of designs) {
     if (d.file_path && fs.existsSync(d.file_path)) {
       total++
@@ -253,11 +261,12 @@ export async function uploadPendingFiles(onProgress?: (msg: string) => void) {
         const { data: { publicUrl } } = supabase.storage.from('designs').getPublicUrl(dest)
         await supabase.from('designs').update({ file_url: publicUrl }).eq('id', d.id)
         uploaded++
+        log(`✓ ${d.title}`)
       } else {
-        log(`  Error subiendo ${d.title}: ${error.message}`)
+        log(`✗ ${d.title}: ${error.message}`)
       }
     }
-    if (d.thumbnail_path && fs.existsSync(d.thumbnail_path)) {
+    if (d.thumbnail_path && fs.existsSync(d.thumbnail_path) && !d.file_url) {
       const ext = path.extname(d.thumbnail_path) || '.jpg'
       const dest = `${d.client_id}/${d.id}_thumb${ext}`
       const buf = fs.readFileSync(d.thumbnail_path)
@@ -269,7 +278,7 @@ export async function uploadPendingFiles(onProgress?: (msg: string) => void) {
     }
   }
 
-  log(`Subidas ${uploaded}/${total} imagenes de disenos`)
+  log(`${uploaded}/${total} imagenes de disenos subidas`)
 
   let logoCount = 0
   for (const c of clients) {
@@ -282,10 +291,13 @@ export async function uploadPendingFiles(onProgress?: (msg: string) => void) {
         const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(dest)
         await supabase.from('clients').update({ logo_url: publicUrl }).eq('id', c.id)
         logoCount++
+        log(`  ✓ Logo ${c.name || c.id}`)
+      } else {
+        log(`  ✗ Logo ${c.name || c.id}: ${error.message}`)
       }
     }
   }
   log(`${logoCount} logos subidos`)
 
-  log('Archivos subidos exitosamente')
+  log('Completado')
 }

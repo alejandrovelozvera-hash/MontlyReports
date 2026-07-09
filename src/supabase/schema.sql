@@ -123,3 +123,22 @@ CREATE TABLE IF NOT EXISTS package_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_package_items_package_id ON package_items(package_id);
+
+-- Storage buckets (ejecutar solo si no existen)
+INSERT INTO storage.buckets (id, name, public) VALUES ('designs', 'designs', true) ON CONFLICT (id) DO UPDATE SET public = true;
+INSERT INTO storage.buckets (id, name, public) VALUES ('logos', 'logos', true) ON CONFLICT (id) DO UPDATE SET public = true;
+INSERT INTO storage.buckets (id, name, public) VALUES ('company', 'company', true) ON CONFLICT (id) DO UPDATE SET public = true;
+INSERT INTO storage.buckets (id, name, public) VALUES ('templates', 'templates', true) ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Storage policies para anon access
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_full_access_designs') THEN
+    CREATE POLICY anon_full_access_designs ON storage.objects FOR ALL TO anon USING (bucket_id = 'designs') WITH CHECK (bucket_id = 'designs');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_full_access_logos') THEN
+    CREATE POLICY anon_full_access_logos ON storage.objects FOR ALL TO anon USING (bucket_id = 'logos') WITH CHECK (bucket_id = 'logos');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_full_access_company') THEN
+    CREATE POLICY anon_full_access_company ON storage.objects FOR ALL TO anon USING (bucket_id = 'company') WITH CHECK (bucket_id = 'company');
+  END IF;
+END $$;

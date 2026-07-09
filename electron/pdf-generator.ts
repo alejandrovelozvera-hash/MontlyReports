@@ -39,8 +39,8 @@ async function optimizeImage(fp: string, maxW: number, quality: number): Promise
     if (img.bitmap.width > maxW) {
       img.resize({ w: maxW })
     }
-    const buf = await img.getBuffer('image/jpeg', { quality } as any)
-    return { data: buf.toString('base64'), fmt: 'JPEG' }
+    const buf = await img.getBuffer('image/png', { quality } as any)
+    return { data: buf.toString('base64'), fmt: 'PNG' }
   } catch {
     return getImgBase64(fp)
   }

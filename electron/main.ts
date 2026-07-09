@@ -267,13 +267,13 @@ function registerIpcHandlers() {
         .then(async (fileUrl) => {
           if (fileUrl) supabaseService.updateDesign(id, { file_url: fileUrl })
         })
-        .catch(() => {})
+        .catch((e: any) => console.error('[Upload] design image fail:', e?.message || e))
       if (thumbPath && fs.existsSync(thumbPath)) {
         supabaseService.uploadFile('designs', `${data.clientId}/${id}_thumb${ext}`, thumbPath, 10000)
           .then(async (thumbUrl) => {
             if (thumbUrl) supabaseService.updateDesign(id, { thumbnail_url: thumbUrl })
           })
-          .catch(() => {})
+          .catch((e: any) => console.error('[Upload] thumb fail:', e?.message || e))
       }
       return result
     }
@@ -312,7 +312,7 @@ function registerIpcHandlers() {
       const updated = await supabaseService.updateDesign(id, { file_path: filePath, file_name: path.basename(newPath) })
       supabaseService.uploadFile('designs', `${clientId}/${id}${ext}`, filePath, 10000).then((url) => {
         if (url) supabaseService.updateDesign(id, { file_url: url })
-      }).catch(() => {})
+      }).catch((e: any) => console.error('[Upload replace] fail:', e?.message || e))
       return updated
     }
     execute('UPDATE designs SET file_path = ?, file_name = ?, thumbnail_path = ? WHERE id = ?', [filePath, path.basename(newPath), '', id])
