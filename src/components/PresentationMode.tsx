@@ -112,7 +112,7 @@ export default function PresentationMode({ designs, client, month, year, onClose
 
         <div className="flex flex-col items-center gap-4 max-w-3xl w-full">
           {d.file_path ? (
-            <img src={`file://${d.file_path}`} alt={d.title}
+            <img src={d.file_path.startsWith('http') ? d.file_path : `file://${d.file_path}`} alt={d.title}
               className="max-h-[65vh] max-w-full object-contain rounded-2xl shadow-2xl"
               style={{boxShadow:'0 30px 80px rgba(0,0,0,0.6)'}} />
           ) : (
@@ -168,7 +168,7 @@ export default function PresentationMode({ designs, client, month, year, onClose
               background:'rgba(255,255,255,0.05)'
             }}>
             {des.file_path ? (
-              <img src={`file://${des.file_path}`} alt="" className="w-full h-full object-cover" />
+              <img src={des.file_path.startsWith('http') ? des.file_path : `file://${des.file_path}`} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2">

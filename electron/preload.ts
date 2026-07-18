@@ -56,7 +56,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectImages: () => ipcRenderer.invoke('dialog:select-images'),
   selectSavePath: (defaultName: string) => ipcRenderer.invoke('dialog:select-save-path', defaultName),
   getImageUrl: (filePath: string) => {
-    // Use 3 slashes (media:///) so URL parser sees empty host + full path
+    if (filePath.startsWith('http')) return filePath
     const normalized = filePath.replace(/\\/g, '/')
     return `media:///${normalized}`
   },
