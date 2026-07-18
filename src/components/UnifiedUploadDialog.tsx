@@ -30,6 +30,8 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
   )
   const [titles, setTitles] = useState<Record<number, string>>({})
   const [prices, setPrices] = useState<Record<number, string>>({})
+  const [platformsPerFile, setPlatformsPerFile] = useState<Record<number, string>>({})
+  const [platformCostsPerFile, setPlatformCostsPerFile] = useState<Record<number, string>>({})
   const [uploading, setUploading] = useState(false)
   const [showPrompt, setShowPrompt] = useState(false)
   const [showPromptPlatform, setShowPromptPlatform] = useState(false)
@@ -70,6 +72,16 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
       delete next[idx]
       return next
     })
+    setPlatformsPerFile((prev) => {
+      const next = { ...prev }
+      delete next[idx]
+      return next
+    })
+    setPlatformCostsPerFile((prev) => {
+      const next = { ...prev }
+      delete next[idx]
+      return next
+    })
   }
 
   const handleUploadAll = async () => {
@@ -79,12 +91,14 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
       const items = files.map((f, i) => {
         const t = titles[i]?.trim() || f.name.replace(/\.[^/.]+$/, '')
         const p = prices[i]?.trim() || commonPrice
+        const pf = platformsPerFile[i] || commonPlatform
+        const pc = platformCostsPerFile[i]?.trim() || commonPlatformCost
         return {
           path: f.path, name: f.name, title: t,
           category: commonCategory,
           price: p ? parseFloat(p) : 0,
-          platform: commonPlatform,
-          platform_cost: commonPlatformCost ? parseFloat(commonPlatformCost) : 0,
+          platform: pf,
+          platform_cost: pc ? parseFloat(pc) : 0,
         }
       })
       await onUpload(items)
@@ -120,16 +134,15 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
         <div className="p-6 space-y-5 max-h-[55vh] overflow-y-auto">
           {/* File selector */}
           <button type="button" onClick={handleSelectFiles}
-            className="w-full h-24 border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-xl flex flex-col items-center justify-center gap-1.5 text-surface-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+            className="w-full h-20 border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-xl flex flex-col items-center justify-center gap-1 text-surface-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             <span className="text-sm font-medium">Seleccionar imágenes</span>
-            <span className="text-xs">JPG, PNG, WebP — uno o varios (Ctrl+Click)</span>
           </button>
 
-          {/* Common settings */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold tracking-wider text-surface-400 dark:text-surface-500 uppercase">Valores comunes</p>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Common defaults */}
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-800/40 border border-surface-200 dark:border-surface-700 p-4 space-y-3">
+            <p className="text-xs font-semibold tracking-wider text-surface-400 uppercase">Valores por defecto</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div>
                 <label className="label">Categoría</label>
                 <select value={commonCategory} onChange={(e) => {
@@ -139,8 +152,8 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
                   }} className="input">
                   <option value="">Sin categoría</option>
                   {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                  <option value="__add__" className="text-indigo-500 font-medium">+ Añadir categoría…</option>
-                  <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar categorías</option>
+                  <option value="__add__" className="text-indigo-500 font-medium">+ Nueva…</option>
+                  <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar</option>
                 </select>
                 {showPrompt && <PromptDialog title="Nueva categoría" placeholder="Nombre de la categoría" onConfirm={handleAddCategory} onCancel={() => setShowPrompt(false)} />}
               </div>
@@ -153,10 +166,14 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
                   }} className="input">
                   <option value="">Sin plataforma</option>
                   {platforms.map((p) => <option key={p} value={p}>{p}</option>)}
-                  <option value="__add__" className="text-indigo-500 font-medium">+ Añadir plataforma…</option>
-                  <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar plataformas</option>
+                  <option value="__add__" className="text-indigo-500 font-medium">+ Nueva…</option>
+                  <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar</option>
                 </select>
                 {showPromptPlatform && <PromptDialog title="Nueva plataforma" placeholder="Nombre de la plataforma" onConfirm={handleAddPlatform} onCancel={() => setShowPromptPlatform(false)} />}
+              </div>
+              <div>
+                <label className="label">Precio del diseño ($)</label>
+                <input type="number" value={commonPrice} onChange={(e) => setCommonPrice(e.target.value)} className="input" placeholder="0.00" min="0" step="0.01" />
               </div>
               <div>
                 <label className="label">Costo de pauta ($)</label>
@@ -173,31 +190,38 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
           {/* File list */}
           {files.length > 0 && (
             <div className="space-y-2">
+              <p className="text-xs font-semibold tracking-wider text-surface-400 uppercase">{files.length} archivo{files.length !== 1 ? 's' : ''}</p>
               {files.map((file, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700">
-                  <div className="w-12 h-12 rounded-lg bg-surface-200 dark:bg-surface-700 shrink-0 flex items-center justify-center overflow-hidden">
-                    <img src={window.electronAPI.getImageUrl(file.path)} alt="" className="w-full h-full object-contain bg-surface-100" />
+                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-surface-800/60 border border-surface-200 dark:border-surface-700 shadow-sm">
+                  <div className="w-14 h-14 rounded-lg bg-surface-100 dark:bg-surface-700 shrink-0 flex items-center justify-center overflow-hidden border border-surface-200 dark:border-surface-600">
+                    <img src={window.electronAPI.getImageUrl(file.path)} alt="" className="w-full h-full object-contain" />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex-1 min-w-0 space-y-2">
                     <input type="text" value={titles[i] || ''} onChange={(e) => setTitles((p) => ({ ...p, [i]: e.target.value }))}
                       className="w-full text-sm font-medium bg-transparent border-0 border-b border-transparent hover:border-surface-300 focus:border-indigo-500 focus:outline-none px-0 py-0.5 text-surface-900 dark:text-surface-100" />
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <div className="flex items-center gap-1.5">
-                        <label className="text-[10px] text-surface-400 font-medium">Precio</label>
-                        <input type="number" value={prices[i] ?? commonPrice} onChange={(e) => setPrices((p) => ({ ...p, [i]: e.target.value }))}
-                          className="w-20 text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded px-1.5 py-0.5 text-surface-500"
-                          placeholder="$0" min="0" step="0.01" />
+                        <span className="text-[10px] text-surface-400 font-medium whitespace-nowrap">Diseño</span>
+                        <input type="number" value={prices[i] ?? ''} onChange={(e) => setPrices((p) => ({ ...p, [i]: e.target.value }))}
+                          className="w-20 text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded-md px-2 py-1 text-surface-600 dark:text-surface-300"
+                          placeholder={commonPrice || '$$'} min="0" step="0.01" />
                       </div>
-                      {!commonCategory && (
-                        <select value="" onChange={() => {}} className="text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded px-1.5 py-0.5 text-surface-400">
-                          <option value="">Sin categoría</option>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-surface-400 font-medium whitespace-nowrap">Pauta</span>
+                        <select value={platformsPerFile[i] ?? ''} onChange={(e) => setPlatformsPerFile((p) => ({ ...p, [i]: e.target.value }))}
+                          className="text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded-md px-2 py-1 text-surface-500 max-w-[110px]">
+                          <option value="">{commonPlatform || 'Plataforma'}</option>
+                          {platforms.map((pl) => <option key={pl} value={pl}>{pl}</option>)}
                         </select>
-                      )}
+                        <input type="number" value={platformCostsPerFile[i] ?? ''} onChange={(e) => setPlatformCostsPerFile((p) => ({ ...p, [i]: e.target.value }))}
+                          className="w-16 text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded-md px-2 py-1 text-surface-600 dark:text-surface-300"
+                          placeholder={commonPlatformCost || '$'} min="0" step="0.01" />
+                      </div>
                     </div>
                     <p className="text-[10px] text-surface-400 truncate">{file.name}</p>
                   </div>
                   <button onClick={() => removeFile(i)}
-                    className="p-1 rounded text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0">
+                    className="p-1.5 rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0 self-start transition-colors">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
                 </div>
