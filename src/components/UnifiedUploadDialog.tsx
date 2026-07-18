@@ -127,43 +127,46 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
           </button>
 
           {/* Common settings */}
-          <div className="grid grid-cols-4 gap-3">
-            <div>
-              <label className="label">Categoría común</label>
-              <select value={commonCategory} onChange={(e) => {
-                  if (e.target.value === '__add__') { setShowPrompt(true); return }
-                  if (e.target.value === '__manage__') { setShowManage('categories'); return }
-                  setCommonCategory(e.target.value)
-                }} className="input">
-                <option value="">Sin categoría</option>
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                <option value="__add__" className="text-indigo-500 font-medium">+ Añadir categoría…</option>
-                <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar categorías</option>
-              </select>
-              {showPrompt && <PromptDialog title="Nueva categoría" placeholder="Nombre de la categoría" onConfirm={handleAddCategory} onCancel={() => setShowPrompt(false)} />}
-            </div>
-            <div>
-              <label className="label">Plataforma</label>
-              <select value={commonPlatform} onChange={(e) => {
-                  if (e.target.value === '__add__') { setShowPromptPlatform(true); return }
-                  if (e.target.value === '__manage__') { setShowManage('platforms'); return }
-                  setCommonPlatform(e.target.value)
-                }} className="input">
-                <option value="">Sin plataforma</option>
-                {platforms.map((p) => <option key={p} value={p}>{p}</option>)}
-                <option value="__add__" className="text-indigo-500 font-medium">+ Añadir plataforma…</option>
-                <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar plataformas</option>
-              </select>
-              {showPromptPlatform && <PromptDialog title="Nueva plataforma" placeholder="Nombre de la plataforma" onConfirm={handleAddPlatform} onCancel={() => setShowPromptPlatform(false)} />}
-            </div>
-            <div>
-              <label className="label">Costo de pauta ($)</label>
-              <input type="number" value={commonPlatformCost} onChange={(e) => setCommonPlatformCost(e.target.value)} className="input" placeholder="0" min="0" step="0.01" />
-            </div>
-            <div>
-              <label className="label">Fecha común</label>
-              <input type="date" value={designDate} onChange={(e) => setDesignDate(e.target.value)}
-                min={`${year}-01-01`} max={maxDate} className="input" />
+          <div className="space-y-2">
+            <p className="text-xs font-semibold tracking-wider text-surface-400 dark:text-surface-500 uppercase">Valores comunes</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Categoría</label>
+                <select value={commonCategory} onChange={(e) => {
+                    if (e.target.value === '__add__') { setShowPrompt(true); return }
+                    if (e.target.value === '__manage__') { setShowManage('categories'); return }
+                    setCommonCategory(e.target.value)
+                  }} className="input">
+                  <option value="">Sin categoría</option>
+                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="__add__" className="text-indigo-500 font-medium">+ Añadir categoría…</option>
+                  <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar categorías</option>
+                </select>
+                {showPrompt && <PromptDialog title="Nueva categoría" placeholder="Nombre de la categoría" onConfirm={handleAddCategory} onCancel={() => setShowPrompt(false)} />}
+              </div>
+              <div>
+                <label className="label">Plataforma / Red social</label>
+                <select value={commonPlatform} onChange={(e) => {
+                    if (e.target.value === '__add__') { setShowPromptPlatform(true); return }
+                    if (e.target.value === '__manage__') { setShowManage('platforms'); return }
+                    setCommonPlatform(e.target.value)
+                  }} className="input">
+                  <option value="">Sin plataforma</option>
+                  {platforms.map((p) => <option key={p} value={p}>{p}</option>)}
+                  <option value="__add__" className="text-indigo-500 font-medium">+ Añadir plataforma…</option>
+                  <option value="__manage__" className="text-indigo-500 font-medium">⚙ Gestionar plataformas</option>
+                </select>
+                {showPromptPlatform && <PromptDialog title="Nueva plataforma" placeholder="Nombre de la plataforma" onConfirm={handleAddPlatform} onCancel={() => setShowPromptPlatform(false)} />}
+              </div>
+              <div>
+                <label className="label">Costo de pauta ($)</label>
+                <input type="number" value={commonPlatformCost} onChange={(e) => setCommonPlatformCost(e.target.value)} className="input" placeholder="0.00" min="0" step="0.01" />
+              </div>
+              <div>
+                <label className="label">Fecha</label>
+                <input type="date" value={designDate} onChange={(e) => setDesignDate(e.target.value)}
+                  min={`${year}-01-01`} max={maxDate} className="input" />
+              </div>
             </div>
           </div>
 
@@ -178,10 +181,13 @@ export default function UnifiedUploadDialog({ clientId, month, year, onUpload, o
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <input type="text" value={titles[i] || ''} onChange={(e) => setTitles((p) => ({ ...p, [i]: e.target.value }))}
                       className="w-full text-sm font-medium bg-transparent border-0 border-b border-transparent hover:border-surface-300 focus:border-indigo-500 focus:outline-none px-0 py-0.5 text-surface-900 dark:text-surface-100" />
-                    <div className="flex gap-2">
-                      <input type="number" value={prices[i] ?? commonPrice} onChange={(e) => setPrices((p) => ({ ...p, [i]: e.target.value }))}
-                        className="w-20 text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded px-1.5 py-0.5 text-surface-500"
-                        placeholder="$0" min="0" step="0.01" />
+                    <div className="flex gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[10px] text-surface-400 font-medium">Precio</label>
+                        <input type="number" value={prices[i] ?? commonPrice} onChange={(e) => setPrices((p) => ({ ...p, [i]: e.target.value }))}
+                          className="w-20 text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded px-1.5 py-0.5 text-surface-500"
+                          placeholder="$0" min="0" step="0.01" />
+                      </div>
                       {!commonCategory && (
                         <select value="" onChange={() => {}} className="text-xs bg-transparent border border-surface-200 dark:border-surface-700 rounded px-1.5 py-0.5 text-surface-400">
                           <option value="">Sin categoría</option>
