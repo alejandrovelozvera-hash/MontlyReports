@@ -101,8 +101,10 @@ function registerMediaProtocol() {
   protocol.handle(MEDIA_PROTOCOL, (request) => {
     const url = new URL(request.url)
     let filePath = decodeURIComponent(url.pathname)
-    if (filePath.startsWith('/')) filePath = filePath.substring(1)
-    if (process.platform === 'win32') filePath = filePath.replace(/\//g, '\\')
+    if (process.platform === 'win32') {
+      if (filePath.startsWith('/')) filePath = filePath.substring(1)
+      filePath = filePath.replace(/\//g, '\\')
+    }
     try {
       const data = fs.readFileSync(filePath)
       const ext = path.extname(filePath).toLowerCase()
@@ -257,8 +259,7 @@ function registerIpcHandlers() {
       const designsDir = path.join(app.getPath('userData'), 'designs', data.clientId)
       const ext = path.extname(data.filePath) || '.jpg'
       const { filePath, thumbPath } = await compressAndCopyImage(data.filePath, designsDir, `${id}${ext}`)
-      const result = await supabaseService.createDesign({ id, clientId: data.clientId, title: data.title, description: data.description || '', category: data.category || '', sort_order: data.sortOrder ?? 0, file_name: data.fileName, file_url: '', thumbnail_url: '', design_date: data.designDate, price: data.price ?? 0, platform: data.platform || '', platform_cost: data.platform_cost ?? 0 })
-      result.file_path = filePath
+      const result = await supabaseService.createDesign({ id, clientId: data.clientId, title: data.title, description: data.description || '', category: data.category || '', sort_order: data.sortOrder ?? 0, file_name: data.fileName, file_path: filePath, thumbnail_path: thumbPath, design_date: data.designDate, price: data.price ?? 0, platform: data.platform || '', platform_cost: data.platform_cost ?? 0 })
       // Fire-and-forget upload to Storage — no bloquea al usuario
       supabaseService.uploadFile('designs', `${data.clientId}/${id}${ext}`, filePath, 10000)
         .then(async (fileUrl) => {
