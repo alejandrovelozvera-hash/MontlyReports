@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import fs from 'fs'
 import path from 'path'
+import https from 'https'
 import { Jimp } from 'jimp'
 
 interface Client {
@@ -31,6 +32,31 @@ function getImgBase64(fp: string): {data:string,fmt:string}|null {
     const ext = path.extname(fp).toLowerCase().replace('.','')
     return { data: raw.toString('base64'), fmt: ext==='png'?'PNG':'JPEG' }
   } catch { return null }
+}
+
+function downloadFile(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      const chunks: Buffer[] = []
+      res.on('data', (c) => chunks.push(c))
+      res.on('end', () => resolve(Buffer.concat(chunks)))
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+}
+
+async function loadImage(pathOrUrl: string, maxW: number, quality: number): Promise<{data:string,fmt:string}|null> {
+  if (fs.existsSync(pathOrUrl)) return optimizeImage(pathOrUrl, maxW, quality)
+  if (pathOrUrl.startsWith('http')) {
+    try {
+      const buf = await downloadFile(pathOrUrl)
+      const img = await Jimp.read(buf) as any
+      if (img.bitmap.width > maxW) img.resize({ w: maxW })
+      const out = await img.getBuffer('image/png', { quality } as any)
+      return { data: out.toString('base64'), fmt: 'PNG' }
+    } catch { return null }
+  }
+  return null
 }
 
 async function optimizeImage(fp: string, maxW: number, quality: number): Promise<{data:string,fmt:string}|null> {
@@ -84,18 +110,18 @@ export async function generatePDF({
 
   // Precargar logo de la empresa
   let companyLogoData: {data:string,fmt:string}|null = null
-  if (company?.logoPath && fs.existsSync(company.logoPath)) {
-    companyLogoData = await optimizeImage(company.logoPath, 400, 60)
+  if (company?.logoPath) {
+    companyLogoData = await loadImage(company.logoPath, 400, 60)
   }
 
   // Precargar imágenes (optimizadas con calidad reducida)
   const cache=new Map<string,{data:string,fmt:string}|null>()
   for(const d of designs){
-    if(d.file_path&&fs.existsSync(d.file_path))
-      cache.set(d.file_path,await optimizeImage(d.file_path, 400, 50))
+    if(d.file_path)
+      cache.set(d.file_path, await loadImage(d.file_path, 400, 50))
   }
-  if(client.logo_path&&fs.existsSync(client.logo_path))
-    cache.set(client.logo_path,await optimizeImage(client.logo_path, 400, 60))
+  if(client.logo_path)
+    cache.set(client.logo_path, await loadImage(client.logo_path, 400, 60))
 
   onProgress(15)
 
@@ -389,8 +415,8 @@ export async function generateProformaPDF(params: {
 
   // Precargar logo optimizado (solo si no se usa template)
   let logoData: { data: string; fmt: string } | null = null
-  if (!usingTemplate && company?.logoPath && fs.existsSync(company.logoPath)) {
-    logoData = await optimizeImage(company.logoPath, 400, 80)
+  if (!usingTemplate && company?.logoPath) {
+    logoData = await loadImage(company.logoPath, 400, 80)
   }
 
   // Header: logo + nombre empresa (solo sin plantilla)
