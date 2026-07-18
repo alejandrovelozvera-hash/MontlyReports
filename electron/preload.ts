@@ -56,10 +56,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectImages: () => ipcRenderer.invoke('dialog:select-images'),
   selectSavePath: (defaultName: string) => ipcRenderer.invoke('dialog:select-save-path', defaultName),
   getImageUrl: (filePath: string) => {
-    if (!filePath) return ''
+    if (!filePath) { console.warn('[getImageUrl] empty path'); return '' }
     if (filePath.startsWith('http')) return filePath
     const result = ipcRenderer.sendSync('image:get-url-sync', filePath)
-    return result || `media:///${filePath.replace(/\\/g, '/')}`
+    if (result) return result
+    console.warn('[getImageUrl] fallback to media:// for:', filePath)
+    return `media:///${filePath.replace(/\\/g, '/')}`
   },
   readImageBase64: (filePath: string) => ipcRenderer.invoke('image:read-base64', filePath),
 

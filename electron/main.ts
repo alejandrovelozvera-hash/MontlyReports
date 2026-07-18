@@ -133,8 +133,11 @@ function registerMediaProtocol() {
 
   ipcMain.on('image:get-url-sync', (event, filePath: string) => {
     try {
-      if (!filePath || filePath.startsWith('http')) { event.returnValue = filePath; return }
-      if (!fs.existsSync(filePath)) { event.returnValue = null; return }
+      if (!filePath || filePath.startsWith('http')) { event.returnValue = filePath || ''; return }
+      if (!fs.existsSync(filePath)) {
+        event.returnValue = null
+        return
+      }
       const data = fs.readFileSync(filePath)
       const ext = path.extname(filePath).toLowerCase()
       const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
@@ -266,7 +269,13 @@ function registerIpcHandlers() {
 
   // -- Designs --
   ipcMain.handle('designs:list', async (_event, clientId, month?, year?) => {
-    if (supabaseService.isEnabled()) return supabaseService.listDesigns(clientId, month, year)
+    if (supabaseService.isEnabled()) {
+      const result = await supabaseService.listDesigns(clientId, month, year)
+      if (result.length > 0) {
+        console.log('[designs:list] first item file_path:', result[0].file_path?.substring(0, 80))
+      }
+      return result
+    }
     if (month !== undefined && year !== undefined) {
       return queryAll(
         `SELECT * FROM designs WHERE client_id = ? AND substr(design_date, 6, 2) = printf('%02d', ?)
