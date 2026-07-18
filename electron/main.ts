@@ -114,9 +114,32 @@ function registerMediaProtocol() {
         '.svg': 'image/svg+xml',
       }
       return new Response(data, { headers: { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' } })
-    } catch {
-      return new Response('Not found', { status: 404 })
+    } catch (e) {
+      return new Response(`Not found: ${filePath}`, { status: 404 })
     }
+  })
+
+  ipcMain.handle('image:read-base64', async (_event, filePath: string) => {
+    try {
+      if (!filePath) return null
+      if (filePath.startsWith('http')) return null
+      if (!fs.existsSync(filePath)) return null
+      const data = fs.readFileSync(filePath)
+      const ext = path.extname(filePath).toLowerCase()
+      const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
+      return `data:${mime};base64,${data.toString('base64')}`
+    } catch { return null }
+  })
+
+  ipcMain.on('image:get-url-sync', (event, filePath: string) => {
+    try {
+      if (!filePath || filePath.startsWith('http')) { event.returnValue = filePath; return }
+      if (!fs.existsSync(filePath)) { event.returnValue = null; return }
+      const data = fs.readFileSync(filePath)
+      const ext = path.extname(filePath).toLowerCase()
+      const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
+      event.returnValue = `data:${mime};base64,${data.toString('base64')}`
+    } catch { event.returnValue = null }
   })
 }
 

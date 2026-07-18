@@ -24,6 +24,7 @@ declare global {
     selectImages: () => Promise<string[]>
     selectSavePath: (defaultName: string) => Promise<string | null>
     getImageUrl: (filePath: string) => string
+    readImageBase64: (filePath: string) => Promise<string | null>
 
     getAppPath: () => Promise<string>
     openFolder: (filePath: string) => Promise<void>
