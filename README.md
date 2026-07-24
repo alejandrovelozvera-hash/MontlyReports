@@ -56,33 +56,46 @@ npm run build
 
 ## Estructura del proyecto
 
-monthly-design-reports/
-## Estructura del proyecto
-
 <details>
 <summary>Ver arbol de carpetas</summary>
-monthly-design-reports/
-|
-|-- electron/ # Proceso principal de Electron
-| |-- main.ts # Entry point del proceso Electron
-| |-- preload.ts # Bridge seguro entre Electron y el renderer
-| |-- db.ts # Capa de base de datos local
-| |-- pdf-generator.ts # Generacion de PDFs (proformas, reportes)
-| |-- migrate-to-supabase.ts # Migracion de datos locales a Supabase
-| -- supabase-service.ts      # Cliente y servicios de Supabase | |-- src/                         # Aplicacion React (renderer) |   |-- components/              # 20+ componentes de UI |   |   |-- ClientForm.tsx           # Formulario de cliente |   |   |-- BatchUploader.tsx        # Carga de disenos por lotes |   |   |-- ProformaDialog.tsx       # Generacion de proformas |   |   |-- StatsChart.tsx           # Graficas de estadisticas |   |   -- ... # (formularios, dialogs, previews)
-| |
-| |-- pages/ # Vistas principales
-| | |-- Dashboard.tsx
-| | |-- Clients.tsx
-| | |-- ClientDetail.tsx
-| | |-- Finance.tsx
-| | -- Settings.tsx |   | |   |-- store/ |   |   -- useStore.ts # Estado global (Zustand)
-| |
-| -- supabase/ |       |-- client.ts            # Cliente de Supabase |       |-- migrate.ts           # Migracion de esquema/datos |       -- schema.sql # Definicion de la base de datos
-|
-|-- vite.config.ts
-|-- tailwind.config.js
-`-- package.json
+
+    monthly-design-reports/
+    |
+    |-- electron/                    # Proceso principal de Electron
+    |   |-- main.ts                  # Entry point del proceso Electron
+    |   |-- preload.ts               # Bridge seguro entre Electron y el renderer
+    |   |-- db.ts                    # Capa de base de datos local
+    |   |-- pdf-generator.ts         # Generacion de PDFs (proformas, reportes)
+    |   |-- migrate-to-supabase.ts   # Migracion de datos locales a Supabase
+    |   `-- supabase-service.ts      # Cliente y servicios de Supabase
+    |
+    |-- src/                         # Aplicacion React (renderer)
+    |   |-- components/              # 20+ componentes de UI
+    |   |   |-- ClientForm.tsx           # Formulario de cliente
+    |   |   |-- BatchUploader.tsx        # Carga de disenos por lotes
+    |   |   |-- ProformaDialog.tsx       # Generacion de proformas
+    |   |   |-- StatsChart.tsx           # Graficas de estadisticas
+    |   |   `-- ...                      # (formularios, dialogs, previews)
+    |   |
+    |   |-- pages/                   # Vistas principales
+    |   |   |-- Dashboard.tsx
+    |   |   |-- Clients.tsx
+    |   |   |-- ClientDetail.tsx
+    |   |   |-- Finance.tsx
+    |   |   `-- Settings.tsx
+    |   |
+    |   |-- store/
+    |   |   `-- useStore.ts          # Estado global (Zustand)
+    |   |
+    |   `-- supabase/
+    |       |-- client.ts            # Cliente de Supabase
+    |       |-- migrate.ts           # Migracion de esquema/datos
+    |       `-- schema.sql           # Definicion de la base de datos
+    |
+    |-- vite.config.ts
+    |-- tailwind.config.js
+    `-- package.json
+
 </details>
 
 ## Roadmap
